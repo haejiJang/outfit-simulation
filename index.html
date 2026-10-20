@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self';"
+    />
+    <title>옷 시뮬레이션</title>
+    <link rel="stylesheet" href="style.css" />
+    <meta name="theme-color" content="#E5D5D5" />
+  </head>
+
+  <body>
+    <!-- 1280×832 기준으로 디자인된 화면을 창 크기에 맞춰 통째로 스케일 -->
+    <div id="stage">
+      <!-- ===== 홈 ===== -->
+      <div id="start-screen" class="screen active">
+        <div style="font-size: 32px; padding: 1rem 5rem" class="screen-title">
+          옷 시뮬레이션
+        </div>
+        <div class="home-menu">
+          <button class="box home-item" data-goto="matching-screen">
+            매칭
+          </button>
+          <button class="box home-item" data-goto="wardrobe-screen">
+            옷장
+          </button>
+          <button class="box home-item" data-goto="lookbook-screen">
+            룩북
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== 매칭 ===== -->
+      <div id="matching-screen" class="screen">
+        <div class="screen-title">MATCH</div>
+        <button
+          class="primary-button top-left"
+          data-goto="start-screen"
+          title="홈"
+        >
+          <img class="icon" src="assets/images/home.svg" alt="홈" />
+        </button>
+        <button class="primary-button save-top-right" id="matching-save">
+          SAVE
+        </button>
+
+        <div class="matching-body">
+          <div class="clothes-column">
+            <!-- 상의 목록 -->
+            <div class="clothes-list" data-kind="top">
+              <button
+                class="circle-button list-arrow left"
+                data-dir="prev"
+                title="이전"
+              >
+                <img class="icon" src="assets/images/arrow.png" alt="이전" />
+              </button>
+              <div class="grid" data-grid="top"></div>
+              <button
+                class="circle-button list-arrow right"
+                data-dir="next"
+                title="다음"
+              >
+                <img
+                  class="icon flip"
+                  src="assets/images/arrow.png"
+                  alt="다음"
+                />
+              </button>
+            </div>
+
+            <!-- 하의 목록 -->
+            <div class="clothes-list" data-kind="bottom">
+              <button
+                class="circle-button list-arrow left"
+                data-dir="prev"
+                title="이전"
+              >
+                <img class="icon" src="assets/images/arrow.png" alt="이전" />
+              </button>
+              <div class="grid" data-grid="bottom"></div>
+              <button
+                class="circle-button list-arrow right"
+                data-dir="next"
+                title="다음"
+              >
+                <img
+                  class="icon flip"
+                  src="assets/images/arrow.png"
+                  alt="다음"
+                />
+              </button>
+            </div>
+          </div>
+
+          <div class="zone" id="matching-zone"></div>
+        </div>
+      </div>
+
+      <!-- ===== 옷장 ===== -->
+      <div id="wardrobe-screen" class="screen">
+        <div class="screen-title">Wardrobe</div>
+        <button
+          class="primary-button icon-button top-left"
+          data-goto="start-screen"
+          title="홈"
+        >
+          <img class="icon" src="assets/images/home.svg" alt="홈" />
+        </button>
+
+        <div class="wardrobe-body">
+          <!-- 탭 메뉴 (옷 추가 화면과 같은 모양) -->
+          <div class="kind-buttons">
+            <button
+              class="primary-button ward-kind-button"
+              data-ward-kind="top"
+            >
+              상의
+            </button>
+            <button
+              class="primary-button ward-kind-button unselected"
+              data-ward-kind="bottom"
+            >
+              하의
+            </button>
+          </div>
+
+          <!-- 옷 목록 (매칭 화면의 2×4 격자) -->
+          <div class="wardrobe-list">
+            <button
+              class="circle-button list-arrow left"
+              data-ward-dir="prev"
+              title="이전"
+            >
+              <img class="icon" src="assets/images/arrow.png" alt="이전" />
+            </button>
+            <div class="grid" id="wardrobe-grid"></div>
+            <button
+              class="circle-button list-arrow right"
+              data-ward-dir="next"
+              title="다음"
+            >
+              <img class="icon flip" src="assets/images/arrow.png" alt="다음" />
+            </button>
+          </div>
+
+          <!-- 선택 모드 안내 (평소엔 숨김, 자리는 유지) -->
+          <div class="wardrobe-hint" id="wardrobe-hint"></div>
+
+          <!-- 격자 중앙 아래 원형 버튼 -->
+          <div class="wardrobe-actions">
+            <button class="circle-button" id="wardrobe-add" title="옷 추가">
+              <img class="icon" src="assets/images/plus.svg" alt="추가" />
+            </button>
+            <button class="circle-button" id="wardrobe-trash" title="삭제">
+              <img class="icon" src="assets/images/trash.svg" alt="삭제" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 옷 추가 ===== -->
+      <div id="add-screen" class="screen">
+        <div class="screen-title">Add</div>
+        <button
+          class="primary-button top-left"
+          data-goto="wardrobe-screen"
+          title="옷장으로"
+        >
+          BACK
+        </button>
+
+        <div class="add-body">
+          <div class="kind-buttons">
+            <button class="primary-button kind-button" data-kind="top">
+              상의
+            </button>
+            <button
+              class="primary-button kind-button unselected"
+              data-kind="bottom"
+            >
+              하의
+            </button>
+          </div>
+          <div class="add-columns">
+            <div class="add-left">
+              <button class="box upload-box" id="upload-box">
+                <span class="upload-text">옷 사진<br />업로드하기</span>
+              </button>
+              <input
+                type="file"
+                id="file-input"
+                accept="image/*,.heic,.heif"
+                multiple
+                hidden
+              />
+            </div>
+
+            <img
+              class="add-arrow"
+              src="assets/images/big-arrow.png"
+              alt=""
+              aria-hidden="true"
+            />
+
+            <div class="add-right">
+              <div class="zone square" id="add-zone">
+                <div class="zone-placeholder">
+                  배경이 제거된 옷이 여기에 보여요
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="primary-button" id="add-save" disabled>save</button>
+        </div>
+      </div>
+
+      <!-- ===== 룩 저장 ===== -->
+      <div id="save-look-screen" class="screen">
+        <div class="screen-title">Look</div>
+
+        <div class="save-body">
+          <div class="save-row">
+            <button
+              class="primary-button icon-button"
+              id="save-back"
+              title="뒤로"
+            >
+              <img class="icon" src="assets/images/arrow.png" alt="뒤로" />
+            </button>
+            <div class="zone" id="save-zone"></div>
+            <button class="primary-button" id="save-confirm">save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 룩북 ===== -->
+      <div id="lookbook-screen" class="screen">
+        <div class="screen-title">Lookbook</div>
+        <button
+          class="primary-button icon-button top-left"
+          data-goto="start-screen"
+          title="홈"
+        >
+          <img class="icon" src="assets/images/home.svg" alt="홈" />
+        </button>
+
+        <div class="lookbook-body">
+          <button
+            class="circle-button list-arrow left"
+            id="lookbook-prev"
+            title="이전"
+          >
+            <img class="icon" src="assets/images/arrow.png" alt="이전" />
+          </button>
+
+          <div class="lookbook-center">
+            <div class="zone" id="lookbook-zone">
+              <div class="lookbook-empty" id="lookbook-empty" hidden>
+                아직 저장한 룩이 없어요.<br />매칭 화면에서 룩을 만들어 보세요.
+              </div>
+            </div>
+            <button
+              class="circle-button trash-button"
+              id="lookbook-delete"
+              title="삭제"
+            >
+              <img class="icon" src="assets/images/trash.svg" alt="삭제" />
+            </button>
+          </div>
+
+          <button
+            class="circle-button list-arrow right"
+            id="lookbook-next"
+            title="다음"
+          >
+            <img class="icon flip" src="assets/images/arrow.png" alt="다음" />
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== 공통 확인 모달 ===== -->
+      <div class="modal-overlay" id="confirm-modal" hidden>
+        <div class="modal-box">
+          <div class="modal-text" id="confirm-text"></div>
+          <div class="modal-actions">
+            <button class="primary-button unselected" id="confirm-cancel">
+              취소
+            </button>
+            <button class="primary-button" id="confirm-ok">삭제</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

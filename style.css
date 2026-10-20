@@ -1,0 +1,571 @@
+@font-face {
+  font-family: "PF Stardust";
+  src: url("assets/fonts/PFStardustBold.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --pink: #fcc9d0;
+  --pink-deep: #f4a3b0;
+  --cream: #fffdf8;
+  --ink: #5a4a4a;
+  --box-bg: #ffffff;
+  --radius: 18px;
+  --shadow: 0 6px 0 rgba(244, 163, 176, 0.35);
+  --screen-pad-y: 50px;
+  --screen-pad-x: 80px;
+  /* 디자인 기준 해상도 (Electron 창 기본 크기) */
+  --design-w: 1280px;
+  --design-h: 832px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: "PF Stardust", sans-serif;
+  color: var(--ink);
+  background-color: var(--cream);
+  background-image:
+    radial-gradient(#fcc9d0 4px, transparent 4px),
+    radial-gradient(#fcc9d0 4px, transparent 4px);
+  background-size: 52px 52px;
+  background-position:
+    0 0,
+    26px 26px;
+}
+
+/* ===== 반응형 무대 =====
+   모든 화면을 1280×832 고정 크기로 그린 뒤, 창 크기에 맞춰 통째로 균일 스케일.
+   --scale 값은 renderer.js가 min(창너비/디자인너비, 창높이/디자인높이)로 계산해 넣는다.
+   덕분에 박스 크기/위치/비율이 그대로 유지되면서 화면 크기에만 반응한다. */
+#stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--design-w);
+  height: var(--design-h);
+  transform: translate(-50%, -50%) scale(var(--scale, 1));
+  transform-origin: center center;
+}
+
+/* ===== 화면 전환 ===== */
+.screen {
+  display: none;
+  position: absolute;
+  inset: 0;
+  padding: var(--screen-pad-y) var(--screen-pad-x);
+}
+.screen.active {
+  display: block;
+}
+
+/* ===== 공통: 화면 이름 ===== */
+.screen-title {
+  position: absolute;
+  top: var(--screen-pad-y);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1rem;
+  border: 3px solid black;
+  border-radius: 999px;
+  background: var(--pink-deep);
+  color: black;
+  font-family: inherit;
+  font-size: 1.4rem;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  box-shadow: inset 0 4px 8px #fff9;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== 공통: box ===== */
+.box {
+  aspect-ratio: 1 / 1;
+  background: #d9d9d9;
+  border: 5px solid #000;
+  border-bottom-color: #fff;
+  box-shadow: 0 5px 0 #b0b0b0;
+  color: #000;
+}
+
+/* ===== 공통: primary-button ===== */
+.primary-button {
+  font-family: inherit;
+  font-size: 22px;
+  color: black;
+  background: var(--pink-deep);
+  border: 3px solid black;
+  border-radius: 0;
+  padding: 12px 26px;
+  cursor: pointer;
+}
+.primary-button:hover {
+  filter: brightness(1.05);
+}
+.primary-button:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+}
+.primary-button:disabled {
+  cursor: default;
+  box-shadow: none;
+}
+.primary-button.unselected {
+  background: #d9d9d9;
+  color: black;
+  border: 3px solid black;
+}
+
+.circle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #d9d9d9;
+  border: 3px solid black;
+  cursor: pointer;
+}
+
+.icon {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+.icon.flip {
+  transform: scaleX(-1);
+}
+
+.top-left {
+  position: absolute;
+  top: var(--screen-pad-y);
+  left: var(--screen-pad-x);
+  z-index: 5;
+}
+
+/* ===== 공통: zone ===== */
+.zone {
+  position: relative;
+  width: 330px;
+  height: 570px;
+  background: #d9d9d9;
+  border: 5px solid #000;
+  border-radius: 0;
+  /* 왼쪽/위쪽 안쪽 가장자리에 덧댄 흰색 선 (두께 6px) */
+  box-shadow:
+    inset 6px 0 0 #fff,
+    inset 0 6px 0 #fff;
+  overflow: hidden;
+}
+.zone.square {
+  aspect-ratio: 1 / 1;
+  /* 명시된 height(570px)를 지워야 aspect-ratio가 1:1로 적용된다 */
+  height: auto;
+}
+
+/* zone 안에 소환된 옷 이미지 */
+.clothing-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
+  transform-origin: center center;
+  will-change: transform;
+}
+.clothing-item.draggable {
+  cursor: grab;
+}
+.clothing-item.dragging {
+  cursor: grabbing;
+}
+
+.zone-placeholder,
+.lookbook-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--pink-deep);
+  font-size: 20px;
+  line-height: 1.6;
+  pointer-events: none;
+}
+
+/* ===== 홈 ===== */
+/* 홈 화면에서는 타이틀을 상단 고정이 아니라 메뉴와 함께 중앙 정렬 */
+#start-screen.active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3.5rem;
+}
+#start-screen .screen-title {
+  position: static;
+  transform: none;
+}
+#start-screen .home-menu {
+  height: auto;
+}
+
+.home-menu {
+  height: 100%;
+  display: flex;
+  gap: 0;
+  align-items: center;
+  justify-content: center;
+}
+.home-item {
+  width: 145px;
+  font-family: inherit;
+  font-size: 30px;
+  color: #000;
+  cursor: pointer;
+}
+/* 박스들이 붙으면 테두리가 겹쳐 보이도록 */
+.home-item + .home-item {
+  margin-left: -5px;
+}
+
+/* ===== 매칭 ===== */
+.save-top-right {
+  position: absolute;
+  top: var(--screen-pad-y);
+  right: var(--screen-pad-x);
+  z-index: 5;
+}
+.matching-body {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 60px 10px 10px;
+}
+.clothes-column {
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+  flex: 0 0 auto;
+}
+.clothes-list {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.grid {
+  display: grid;
+  /* 트랙 간격을 border(5px)만큼 줄이고 gap을 없애 셀 테두리가 서로 겹쳐 보이도록 */
+  grid-template-columns: repeat(4, 140px);
+  grid-template-rows: repeat(2, 140px);
+  gap: 0;
+  width: fit-content;
+  /* 셀(155px)이 트랙(140px)보다 넓어 마지막 열이 15px 오른쪽으로 넘침.
+     그만큼 오른쪽 여백을 더해 오른쪽 화살표와의 시각적 갭을 맞춤 */
+  margin-right: 15px;
+}
+.cell {
+  width: 155px;
+  height: 155px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+}
+.cell.empty {
+  cursor: default;
+}
+/* 행간 겹침: 윗줄 셀을 아랫줄 위로 올려 윗줄의 하단 흰색 보더가 보이도록 */
+.grid .cell:nth-child(-n + 4) {
+  z-index: 2;
+}
+.cell img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.cell.chosen {
+  background: #faa4b5;
+}
+.list-arrow {
+  flex: 0 0 auto;
+}
+
+.zone-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  flex: 0 0 auto;
+}
+
+#matching-zone {
+  flex: 0 0 auto;
+}
+
+/* ===== 옷 추가 ===== */
+.add-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+  align-items: center;
+  /* 위에서부터 배치해 타이틀과 kind-buttons 사이에 여백을 둔다 */
+  justify-content: flex-start;
+  padding: 150px 20px 20px;
+}
+
+.add-columns {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* add-left와 add-right 사이의 오른쪽 방향 화살표 */
+.add-arrow {
+  flex: 0 0 auto;
+  width: 90px;
+  height: auto;
+}
+
+.add-left,
+.add-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+.kind-buttons {
+  display: flex;
+  gap: 16px;
+}
+.kind-button {
+  width: 150px;
+}
+.upload-box {
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 24px;
+  color: black;
+}
+.upload-box.busy {
+  cursor: progress;
+}
+.upload-box.dragover {
+  background: var(--pink-deep, #ff9ec4);
+  border-style: dashed;
+  border-bottom-color: #000;
+}
+.add-right .zone {
+  width: 330px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+/* 옷 추가 화면 zone 안내 문구는 검은색 */
+#add-zone .zone-placeholder {
+  color: #000;
+  opacity: 1;
+}
+
+#add-zone img {
+  width: 90%;
+  height: 90%;
+}
+
+/* ===== 브러쉬 보정 편집기 ===== */
+.edit-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.edit-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+  display: block;
+}
+.brush-toolbar {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 2px solid #000;
+}
+.brush-toolbar button {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 3px 8px;
+  border: 2px solid #000;
+  background: #fff;
+  cursor: pointer;
+}
+.brush-toolbar .brush-mode.active {
+  background: var(--pink-deep, #ff9ec4);
+  color: #000;
+}
+.brush-toolbar .brush-size {
+  width: 70px;
+}
+
+/* ===== 옷장 ===== */
+.wardrobe-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 40px;
+  padding: 150px 20px 20px;
+}
+.ward-kind-button {
+  width: 150px;
+}
+.wardrobe-list {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.wardrobe-actions {
+  display: flex;
+  gap: 20px;
+}
+/* 선택(삭제) 모드일 때 쓰레기통 버튼 강조 */
+#wardrobe-trash.active {
+  background: var(--pink-deep);
+}
+.circle-button:disabled {
+  cursor: default;
+}
+
+/* 선택 모드 안내: 평소엔 글자만 숨기고 높이는 유지해 레이아웃이 흔들리지 않게 */
+.wardrobe-hint {
+  min-height: 28px;
+  font-size: 20px;
+  color: var(--pink-deep);
+  text-align: center;
+  visibility: hidden;
+}
+.wardrobe-hint.show {
+  visibility: visible;
+}
+
+/* ===== 공통 확인 모달 ===== */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(90, 74, 74, 0.45);
+}
+.modal-overlay[hidden] {
+  display: none;
+}
+.modal-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  max-width: 460px;
+  padding: 36px 40px;
+  text-align: center;
+  background: var(--cream);
+  border: 5px solid #000;
+  border-bottom-color: #fff;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.2);
+}
+.modal-text {
+  font-size: 22px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.modal-actions {
+  display: flex;
+  gap: 16px;
+}
+
+/* ===== 룩 저장 ===== */
+.save-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding-top: 40px;
+}
+.save-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+#save-zone,
+#lookbook-zone {
+  width: 330px;
+  height: 570px;
+}
+
+/* ===== 룩북 ===== */
+.lookbook-body {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  /* 상단 타이틀이 차지하는 높이만큼 비워 그 아래 공간의 세로 중앙에 배치 */
+  padding-top: 90px;
+  box-sizing: border-box;
+}
+.lookbook-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.lookbook-empty {
+  font-size: 22px;
+  color: #000;
+  opacity: 1;
+}
+/* display:flex 가 [hidden] 기본값을 덮어써서 숨겨지지 않는 문제 해결 */
+.lookbook-empty[hidden] {
+  display: none;
+}
